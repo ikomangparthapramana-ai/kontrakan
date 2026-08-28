@@ -12,6 +12,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
@@ -623,6 +625,17 @@
 </div>
 
 <script>
+const firebaseConfig = {
+    apiKey: "AIzaSyDRK86XOhsnM_vLNi7A_A18xVbJf-lI4v0",
+    authDomain: "kontrakan-2026.firebaseapp.com",
+    projectId: "kontrakan-2026",
+    storageBucket: "kontrakan-2026.firebasestorage.app",
+    messagingSenderId: "878269423150",
+    appId: "1:878269423150:web:585dd45823d44769e7c9bf"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
 let EXPENSES = {
     Jan: [
         { desc: 'AIR (14&22 JAN 26)', amount: 400000 },
@@ -726,20 +739,56 @@ let INCOME = {
     },
 };
 
+let dataLoaded = false;
+
 function saveData() {
     localStorage.setItem('kontrakan_income', JSON.stringify(INCOME));
     localStorage.setItem('kontrakan_expenses', JSON.stringify(EXPENSES));
+    localStorage.setItem('kontrakan_openingBal', openingBalance);
+    localStorage.setItem('deletedTenants', JSON.stringify(deletedTenants));
+    db.collection('kontrakan_data').doc('main').set({
+        income: INCOME,
+        expenses: EXPENSES,
+        openingBalance: openingBalance,
+        deletedTenants: deletedTenants,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(err => console.error('Gagal simpan ke Firebase:', err));
 }
 
 function loadData() {
-    const savedIncome = localStorage.getItem('kontrakan_income');
-    const savedExpenses = localStorage.getItem('kontrakan_expenses');
-    if (savedIncome) {
-        try { INCOME = JSON.parse(savedIncome); } catch(e) {}
-    }
-    if (savedExpenses) {
-        try { EXPENSES = JSON.parse(savedExpenses); } catch(e) {}
-    }
+    return new Promise((resolve) => {
+        db.collection('kontrakan_data').doc('main').get()
+            .then(doc => {
+                if (doc.exists) {
+                    const d = doc.data();
+                    if (d.income) INCOME = d.income;
+                    if (d.expenses) EXPENSES = d.expenses;
+                    if (d.deletedTenants) deletedTenants = d.deletedTenants;
+                    if (d.openingBalance !== undefined) {
+                        openingBalance = d.openingBalance;
+                        document.getElementById('openingBal').value = openingBalance;
+                    }
+                    localStorage.setItem('kontrakan_income', JSON.stringify(INCOME));
+                    localStorage.setItem('kontrakan_expenses', JSON.stringify(EXPENSES));
+                } else {
+                    const savedIncome = localStorage.getItem('kontrakan_income');
+                    const savedExpenses = localStorage.getItem('kontrakan_expenses');
+                    if (savedIncome) { try { INCOME = JSON.parse(savedIncome); } catch(e) {} }
+                    if (savedExpenses) { try { EXPENSES = JSON.parse(savedExpenses); } catch(e) {} }
+                }
+                dataLoaded = true;
+                resolve();
+            })
+            .catch(err => {
+                console.error('Gagal load dari Firebase:', err);
+                const savedIncome = localStorage.getItem('kontrakan_income');
+                const savedExpenses = localStorage.getItem('kontrakan_expenses');
+                if (savedIncome) { try { INCOME = JSON.parse(savedIncome); } catch(e) {} }
+                if (savedExpenses) { try { EXPENSES = JSON.parse(savedExpenses); } catch(e) {} }
+                dataLoaded = true;
+                resolve();
+            });
+    });
 }
 
 let openingBalance = 153584;
@@ -775,7 +824,6 @@ function getAllTenants() {
 }
 
 function renderAll() {
-    loadData();
     const savedBal = localStorage.getItem('kontrakan_openingBal');
     const bal = savedBal !== null ? parseFloat(savedBal) : (parseFloat(document.getElementById('openingBal').value) || 0);
     openingBalance = bal;
@@ -961,7 +1009,12 @@ function populateMonthFilter() {
 }
 
 document.getElementById('openingBal').addEventListener('input', function() {
-    localStorage.setItem('kontrakan_openingBal', this.value);
+    openingBalance = parseFloat(this.value) || 0;
+    localStorage.setItem('kontrakan_openingBal', openingBalance);
+    db.collection('kontrakan_data').doc('main').update({
+        openingBalance: openingBalance,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(() => {});
     renderAll();
 });
 
@@ -1538,6 +1591,7 @@ document.getElementById('reportMonth').addEventListener('change', renderReportPr
 function resetAllData() {
     if (!confirm('SEMUA DATA yang diubah akan dihapus dan kembali ke data awal. Lanjutkan?')) return;
     if (!confirm('Apakah Anda yakin? Tindakan ini tidak dapat dibatalkan.')) return;
+    db.collection('kontrakan_data').doc('main').delete().catch(()=>{});
     localStorage.removeItem('kontrakan_income');
     localStorage.removeItem('kontrakan_expenses');
     localStorage.removeItem('kontrakan_openingBal');
@@ -1545,7 +1599,22 @@ function resetAllData() {
     location.reload();
 }
 
-renderAll();
+loadData().then(() => {
+    renderAll();
+    console.log('Aplikasi Kontrakan 2026 siap. Data tersinkronisasi dengan Firebase.');
+});
+
+db.collection('kontrakan_data').doc('main').onSnapshot(doc => {
+    if (!dataLoaded) return;
+    if (doc.exists) {
+        const d = doc.data();
+        if (d.income) INCOME = d.income;
+        if (d.expenses) EXPENSES = d.expenses;
+        if (d.deletedTenants) deletedTenants = d.deletedTenants;
+        if (d.openingBalance !== undefined) openingBalance = d.openingBalance;
+        renderAll();
+    }
+});
 </script>
 </body>
 </html>
