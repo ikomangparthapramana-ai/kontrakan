@@ -609,6 +609,7 @@
                 <button class="btn btn-primary" onclick="generatePDF('full')"><i class="fas fa-file-pdf"></i> Download Laporan Lengkap</button>
                 <button class="btn" style="background:var(--danger);color:white;" onclick="generatePDF('summary')"><i class="fas fa-file-alt"></i> Download Ringkasan</button>
                 <button class="btn" style="background:var(--success);color:white;" onclick="generatePDF('tenant')"><i class="fas fa-users"></i> Download per Penghuni</button>
+                <button class="btn" style="background:var(--gray-600);color:white;" onclick="resetAllData()"><i class="fas fa-trash-alt"></i> Reset Semua Data</button>
             </div>
         </div>
 
@@ -622,7 +623,7 @@
 </div>
 
 <script>
-const EXPENSES = {
+let EXPENSES = {
     Jan: [
         { desc: 'AIR (14&22 JAN 26)', amount: 400000 },
         { desc: 'KASI MB YUTI', amount: 200000 },
@@ -682,7 +683,7 @@ const EXPENSES = {
     ],
 };
 
-const INCOME = {
+let INCOME = {
     Jan: {
         'BU IPAH': 800000, 'MB YUTI': 1000000, 'BU YUNI': 800000, 'BU CITRA': 800000,
         'RAHMAT': 800000, 'BU SUSANTI': 1300000, 'PERI PALDI': 400000, 'ZAKARIA': 800000,
@@ -725,6 +726,22 @@ const INCOME = {
     },
 };
 
+function saveData() {
+    localStorage.setItem('kontrakan_income', JSON.stringify(INCOME));
+    localStorage.setItem('kontrakan_expenses', JSON.stringify(EXPENSES));
+}
+
+function loadData() {
+    const savedIncome = localStorage.getItem('kontrakan_income');
+    const savedExpenses = localStorage.getItem('kontrakan_expenses');
+    if (savedIncome) {
+        try { INCOME = JSON.parse(savedIncome); } catch(e) {}
+    }
+    if (savedExpenses) {
+        try { EXPENSES = JSON.parse(savedExpenses); } catch(e) {}
+    }
+}
+
 let openingBalance = 153584;
 let deletedTenants = JSON.parse(localStorage.getItem('deletedTenants') || '[]');
 
@@ -758,8 +775,11 @@ function getAllTenants() {
 }
 
 function renderAll() {
-    const bal = parseFloat(document.getElementById('openingBal').value) || 0;
+    loadData();
+    const savedBal = localStorage.getItem('kontrakan_openingBal');
+    const bal = savedBal !== null ? parseFloat(savedBal) : (parseFloat(document.getElementById('openingBal').value) || 0);
     openingBalance = bal;
+    document.getElementById('openingBal').value = bal;
     renderHeaderStats();
     renderDashboard();
     renderMonthly(document.getElementById('monthFilter').value);
@@ -940,7 +960,10 @@ function populateMonthFilter() {
         months.map(m => `<option value="${m}" ${m === currentVal ? 'selected' : ''}>${m} 2026</option>`).join('');
 }
 
-document.getElementById('openingBal').addEventListener('input', renderAll);
+document.getElementById('openingBal').addEventListener('input', function() {
+    localStorage.setItem('kontrakan_openingBal', this.value);
+    renderAll();
+});
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', function() {
@@ -1051,6 +1074,7 @@ function deleteTenant(name) {
         deletedTenants.push(name);
         saveDeletedTenants();
     }
+    saveData();
     renderAll();
     renderDeleteTenantList();
     populateTenantSelect();
@@ -1059,6 +1083,7 @@ function deleteTenant(name) {
 function restoreTenant(name) {
     deletedTenants = deletedTenants.filter(n => n !== name);
     saveDeletedTenants();
+    saveData();
     renderAll();
     renderDeleteTenantList();
     populateTenantSelect();
@@ -1078,6 +1103,7 @@ document.getElementById('addTenantForm').addEventListener('submit', function(e) 
         deletedTenants = deletedTenants.filter(n => n !== name);
         saveDeletedTenants();
         document.getElementById('newTenantName').value = '';
+        saveData();
         renderAll();
         renderDeleteTenantList();
         populateTenantSelect();
@@ -1086,6 +1112,7 @@ document.getElementById('addTenantForm').addEventListener('submit', function(e) 
     }
     Object.keys(INCOME).forEach(m => { INCOME[m][name] = 0; });
     document.getElementById('newTenantName').value = '';
+    saveData();
     renderAll();
     renderDeleteTenantList();
     populateTenantSelect();
@@ -1135,6 +1162,7 @@ function renderExpenseList() {
 function deleteExpense(month, idx) {
     if (!confirm('Hapus pengeluaran ini?')) return;
     EXPENSES[month].splice(idx, 1);
+    saveData();
     renderAll();
     renderExpenseList();
 }
@@ -1149,6 +1177,7 @@ document.getElementById('addExpenseForm').addEventListener('submit', function(e)
     EXPENSES[month].push({ desc, amount });
     document.getElementById('expDesc').value = '';
     document.getElementById('expAmount').value = '';
+    saveData();
     renderAll();
     renderExpenseList();
     alert('Pengeluaran berhasil ditambahkan!');
@@ -1197,6 +1226,7 @@ function renderPaymentList() {
 function deletePayment(month, name) {
     if (!confirm(`Hapus pembayaran "${name}" di bulan ${month}?`)) return;
     INCOME[month][name] = 0;
+    saveData();
     renderAll();
     renderPaymentList();
 }
@@ -1209,6 +1239,7 @@ document.getElementById('addPaymentForm').addEventListener('submit', function(e)
     if (!month || !tenant || amount <= 0) { alert('Mohon lengkapi semua field!'); return; }
     INCOME[month][tenant] = (INCOME[month][tenant] || 0) + amount;
     document.getElementById('payAmount').value = '';
+    saveData();
     renderAll();
     renderPaymentList();
     alert('Pembayaran berhasil ditambahkan!');
@@ -1503,6 +1534,16 @@ function generatePDF(type) {
 }
 
 document.getElementById('reportMonth').addEventListener('change', renderReportPreview);
+
+function resetAllData() {
+    if (!confirm('SEMUA DATA yang diubah akan dihapus dan kembali ke data awal. Lanjutkan?')) return;
+    if (!confirm('Apakah Anda yakin? Tindakan ini tidak dapat dibatalkan.')) return;
+    localStorage.removeItem('kontrakan_income');
+    localStorage.removeItem('kontrakan_expenses');
+    localStorage.removeItem('kontrakan_openingBal');
+    localStorage.removeItem('deletedTenants');
+    location.reload();
+}
 
 renderAll();
 </script>
