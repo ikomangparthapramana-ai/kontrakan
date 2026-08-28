@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kelola Kontrakan 2026</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --primary: #1a2a6c;
+            --primary-light: #2a3f8f;
+            --primary-lighter: #e8edf9;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            --shadow: 0 4px 20px rgba(0,0,0,0.06);
+            --shadow-lg: 0 8px 40px rgba(0,0,0,0.10);
+            --radius: 14px;
+            --radius-sm: 8px;
+            --transition: 0.25s ease;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-800);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .app-container { max-width: 1440px; margin: 0 auto; }
+
+        .app-header {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px 28px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            gap: 16px;
+        }
+        .app-header .brand { display: flex; align-items: center; gap: 12px; }
+        .app-header .brand i { font-size: 28px; color: var(--primary); }
+        .app-header .brand h1 { font-size: 22px; font-weight: 700; color: var(--gray-900); }
+        .app-header .brand span { font-weight: 400; color: var(--gray-500); font-size: 14px; margin-left: 6px; }
+
+        .header-stats {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 20px 32px;
+        }
+        .header-stats .stat-item { display: flex; align-items: baseline; gap: 6px; }
+        .header-stats .stat-item .label { font-size: 13px; color: var(--gray-500); font-weight: 500; }
+        .header-stats .stat-item .value { font-size: 18px; font-weight: 700; }
+        .value.positive { color: var(--success); }
+        .value.negative { color: var(--danger); }
+        .value.primary { color: var(--primary); }
+
+        .opening-balance-input {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--gray-50);
+            padding: 6px 14px 6px 18px;
+            border-radius: 30px;
+            border: 1px solid var(--gray-200);
+        }
+        .opening-balance-input label { font-size: 13px; font-weight: 600; color: var(--gray-600); white-space: nowrap; }
+        .opening-balance-input input {
+            border: none;
+            background: transparent;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            width: 130px;
+            padding: 6px 0;
+            color: var(--gray-800);
+            outline: none;
+            text-align: right;
+        }
+        .opening-balance-input input:focus { border-bottom: 2px solid var(--primary); }
+
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            background: white;
+            border-radius: var(--radius);
+            padding: 6px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+        .tab-btn {
+            padding: 10px 22px;
+            border: none;
+            background: transparent;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--gray-500);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .tab-btn:hover { background: var(--gray-100); color: var(--gray-700); }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 10px rgba(26,42,108,0.25); }
+
+        .panel { display: none; animation: fadeUp 0.3s ease; }
+        .panel.active { display: block; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+        .card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .card-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .card-header h2 { font-size: 18px; font-weight: 600; color: var(--gray-800); }
+        .card-header h2 i { margin-right: 10px; color: var(--primary); }
+        .card-header .badge { background: var(--primary-lighter); color: var(--primary); padding: 4px 14px; border-radius: 30px; font-size: 13px; font-weight: 600; }
+
+        .month-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 20px;
+        }
+        .month-card {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+        .month-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+        .month-card .month-head {
+            padding: 14px 20px;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .month-card .month-head h3 { font-size: 16px; font-weight: 600; }
+        .month-card .month-head .month-total { font-size: 15px; font-weight: 600; background: rgba(255,255,255,0.2); padding: 2px 14px; border-radius: 30px; }
+        .month-card .month-body { padding: 12px 16px 16px; }
+        .month-card .month-body .sub-section { margin-top: 10px; }
+        .month-card .month-body .sub-section:first-child { margin-top: 0; }
+        .month-card .month-body .sub-label { font-size: 12px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px; }
+        .month-card .month-body .row-item { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; border-bottom: 1px dashed var(--gray-200); }
+        .month-card .month-body .row-item:last-child { border-bottom: none; }
+        .month-card .month-body .row-item .desc { color: var(--gray-700); }
+        .month-card .month-body .row-item .amt { font-weight: 500; font-variant-numeric: tabular-nums; }
+        .month-card .month-body .total-row { margin-top: 8px; padding-top: 8px; border-top: 2px solid var(--gray-300); display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; }
+
+        .tenant-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .tenant-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        .tenant-card:hover { box-shadow: var(--shadow-lg); }
+        .tenant-card .tenant-name { font-weight: 700; font-size: 16px; color: var(--gray-800); margin-bottom: 6px; display: flex; justify-content: space-between; }
+        .tenant-card .tenant-name .status-badge { font-size: 11px; font-weight: 600; padding: 2px 12px; border-radius: 30px; background: var(--gray-200); color: var(--gray-600); }
+        .tenant-card .tenant-name .status-badge.active { background: #d4edda; color: #155724; }
+        .tenant-card .tenant-name .status-badge.inactive { background: #f8d7da; color: #721c24; }
+        .tenant-card .tenant-details { font-size: 13px; color: var(--gray-600); display: flex; flex-wrap: wrap; gap: 4px 16px; }
+        .tenant-card .tenant-details span { display: flex; align-items: center; gap: 4px; }
+        .tenant-card .tenant-payments { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px; }
+        .tenant-card .tenant-payments .pay-badge { font-size: 11px; font-weight: 500; padding: 2px 10px; border-radius: 20px; background: var(--gray-100); color: var(--gray-700); }
+        .tenant-card .tenant-payments .pay-badge.paid { background: #d4edda; color: #155724; }
+        .tenant-card .tenant-payments .pay-badge.zero { background: var(--gray-200); color: var(--gray-500); }
+
+        .selector-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .selector-group select {
+            padding: 8px 14px;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-sm);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            background: white;
+            color: var(--gray-800);
+            outline: none;
+            transition: var(--transition);
+        }
+        .selector-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,42,108,0.15); }
+        .selector-group label { font-weight: 500; font-size: 14px; color: var(--gray-600); }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 18px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: var(--transition);
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+        .btn:hover { background: var(--gray-300); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-light); box-shadow: 0 2px 12px rgba(26,42,108,0.25); }
+        .btn-sm { padding: 4px 12px; font-size: 12px; }
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 3px rgba(26,42,108,0.15) !important;
+        }
+        .delete-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--gray-100); }
+
+        @media (max-width: 768px) {
+            body { padding: 12px; }
+            .app-header { flex-direction: column; align-items: stretch; gap: 14px; padding: 16px 18px; }
+            .header-stats { width: 100%; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+            .header-stats .stat-item .value { font-size: 16px; }
+            .opening-balance-input { width: 100%; justify-content: space-between; }
+            .opening-balance-input input { width: 100px; }
+            .tabs { overflow-x: auto; flex-wrap: nowrap; padding: 4px; gap: 2px; }
+            .tab-btn { padding: 8px 14px; font-size: 13px; white-space: nowrap; }
+            .tab-btn i { display: none; }
+            .month-grid { grid-template-columns: 1fr; }
+            .tenant-grid { grid-template-columns: 1fr; }
+            .card { padding: 14px 16px; }
+        }
+        @media print {
+            .tabs, .selector-group, .btn, .opening-balance-input { display: none !important; }
+            .panel { display: block !important; }
+            .card, .month-card { box-shadow: none !important; border: 1px solid var(--gray-200); break-inside: avoid; }
+            body { background: white; padding: 10px; }
+        }
+        .text-muted { color: var(--gray-500); }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .mb-8 { margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <header class="app-header">
+        <div class="brand">
+            <i class="fas fa-building"></i>
+            <h1>Kontrakan Gunung Indah <span>2026</span></h1>
+        </div>
+        <div class="header-stats">
+            <div class="stat-item">
+                <span class="label">Pendapatan</span>
+                <span class="value primary" id="totalIncome">-</span>
+            </div>
+            <div class="stat-item">
+                <span class="label">Biaya</span>
+                <span class="value negative" id="totalExpense">-</span>
+            </div>
+            <div class="stat-item">
+                <span class="label">Sisa</span>
+                <span class="value positive" id="totalBalance">-</span>
+            </div>
+            <div class="stat-item">
+                <span class="label">Bulan</span>
+                <span class="value" id="monthCount" style="font-weight:600;color:var(--gray-700);">-</span>
+            </div>
+            <div class="opening-balance-input">
+                <label for="openingBal"><i class="fas fa-arrow-right"></i> Saldo Awal</label>
+                <input type="number" id="openingBal" value="153584" step="1000" />
+            </div>
+        </div>
+    </header>
+
+    <div class="tabs" role="tablist">
+        <button class="tab-btn active" data-tab="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</button>
+        <button class="tab-btn" data-tab="monthly"><i class="fas fa-calendar-alt"></i> Bulanan</button>
+        <button class="tab-btn" data-tab="tenants"><i class="fas fa-users"></i> Penghuni</button>
+        <button class="tab-btn" data-tab="manage-tenants"><i class="fas fa-user-plus"></i> Kelola Penghuni</button>
+        <button class="tab-btn" data-tab="expense"><i class="fas fa-receipt"></i> Pengeluaran</button>
+        <button class="tab-btn" data-tab="payment"><i class="fas fa-money-bill-wave"></i> Pembayaran</button>
+    </div>
+
+    <section class="panel active" id="panel-dashboard">
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-chart-simple"></i> Ringkasan Tahunan</h2>
+                <span class="badge">2026</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:12px;" id="summaryCards">
+                <div style="background:var(--gray-50);padding:16px;border-radius:var(--radius-sm);text-align:center;">
+                    <div style="font-size:13px;color:var(--gray-500);">Total Pendapatan</div>
+                    <div style="font-size:26px;font-weight:700;color:var(--primary);" id="dashIncome">-</div>
+                </div>
+                <div style="background:var(--gray-50);padding:16px;border-radius:var(--radius-sm);text-align:center;">
+                    <div style="font-size:13px;color:var(--gray-500);">Total Biaya</div>
+                    <div style="font-size:26px;font-weight:700;color:var(--danger);" id="dashExpense">-</div>
+                </div>
+                <div style="background:var(--gray-50);padding:16px;border-radius:var(--radius-sm);text-align:center;">
+                    <div style="font-size:13px;color:var(--gray-500);">Sisa (dengan saldo awal)</div>
+                    <div style="font-size:26px;font-weight:700;color:var(--success);" id="dashBalance">-</div>
+                </div>
+                <div style="background:var(--gray-50);padding:16px;border-radius:var(--radius-sm);text-align:center;">
+                    <div style="font-size:13px;color:var(--gray-500);">Rata-rata Pendapatan / Bulan</div>
+                    <div style="font-size:26px;font-weight:700;color:var(--primary);" id="dashAvg">-</div>
+                </div>
+            </div>
+            <div style="border-top:1px solid var(--gray-200);padding-top:12px;display:flex;flex-wrap:wrap;gap:8px 24px;font-size:14px;color:var(--gray-600);">
+                <span><strong>Jumlah Penghuni Aktif:</strong> <span id="activeTenants">-</span></span>
+                <span><strong>Total Bulan:</strong> <span id="totalMonths">-</span></span>
+                <span><strong>Saldo Awal:</strong> <span id="displayOpeningBal">Rp0</span></span>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
+            <div class="card">
+                <div class="card-header"><h2><i class="fas fa-trophy"></i> Penghuni dengan Pendapatan Tertinggi</h2></div>
+                <div id="topTenants" style="font-size:14px;"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h2><i class="fas fa-star"></i> Bulan dengan Pendapatan Tertinggi</h2></div>
+                <div id="topMonths" style="font-size:14px;"></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="panel" id="panel-monthly">
+        <div class="card">
+            <div class="flex-between mb-8">
+                <div class="selector-group">
+                    <label for="monthFilter">Filter Bulan:</label>
+                    <select id="monthFilter"><option value="all">Semua</option></select>
+                </div>
+                <div>
+                    <button class="btn btn-sm btn-primary" id="printMonthlyBtn"><i class="fas fa-print"></i> Cetak</button>
+                </div>
+            </div>
+            <div class="month-grid" id="monthGrid"></div>
+        </div>
+    </section>
+
+    <section class="panel" id="panel-tenants">
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-users"></i> Daftar Penghuni</h2>
+                <span class="badge" id="tenantCount">0</span>
+            </div>
+            <div class="tenant-grid" id="tenantGrid"></div>
+        </div>
+    </section>
+
+    <section class="panel" id="panel-manage-tenants">
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-user-plus"></i> Tambah Penghuni Baru</h2>
+            </div>
+            <form id="addTenantForm" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+                <div style="flex:1;min-width:220px;">
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:4px;">Nama Penghuni</label>
+                    <input type="text" id="newTenantName" required placeholder="Contoh: BU SARAH" style="width:100%;padding:10px 14px;border:1px solid var(--gray-300);border-radius:var(--radius-sm);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:var(--transition);" />
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Tambah Penghuni</button>
+            </form>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-trash-alt"></i> Hapus Penghuni</h2>
+            </div>
+            <div id="deleteTenantList"></div>
+        </div>
+    </section>
+
+    <section class="panel" id="panel-expense">
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-receipt"></i> Tambah Pengeluaran</h2>
+            </div>
+            <form id="addExpenseForm" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+                <div style="flex:1;min-width:160px;">
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:4px;">Bulan</label>
+                    <select id="expMonth" style="width:100%;padding:10px 14px;border:1px solid var(--gray-300);border-radius:var(--radius-sm);font-family:'Inter',sans-serif;font-size:14px;background:white;outline:none;"></select>
+                </div>
+                <div style="flex:2;min-width:220px;">
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:4px;">Keterangan</label>
+                    <input type="text" id="expDesc" required placeholder="Contoh: AIR BULAN SEPTEMBER" style="width:100%;padding:10px 14px;border:1px solid var(--gray-300);border-radius:var(--radius-sm);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:var(--transition);" />
+                </div>
+                <div style="flex:1;min-width:160px;">
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:4px;">Jumlah (Rp)</label>
+                    <input type="number" id="expAmount" required min="0" step="1000" placeholder="0" style="width:100%;padding:10px 14px;border:1px solid var(--gray-300);border-radius:var(--radius-sm);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:var(--transition);" />
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Tambah Pengeluaran</button>
+            </form>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-list"></i> Daftar Pengeluaran</h2>
+                <div class="selector-group" style="margin-bottom:0;">
+                    <label for="expFilterMonth">Filter:</label>
+                    <select id="expFilterMonth"></select>
+                </div>
+            </div>
+            <div id="expenseList"></div>
+        </div>
+    </section>
+
+    <section class="panel" id="panel-payment">
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-money-bill-wave"></i> Tambah Pembayaran</h2>
+            </div>
+            <form id="addPaymentForm" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+                <div style="flex:1;min-width:160px;">
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:4px;">Bulan</label>
+                    <select id="payMonth" style="width:100%;padding:10px 14px;border:1px solid var(--gray-300);border-radius:var(--radius-sm);font-family:'Inter',sans-serif;font-size:14px;background:white;outline:none;"></select>
+                </div>
+                <div style="flex:2;min-width:220px;">
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:4px;">Nama Penghuni</label>
+                    <select id="payTenant" style="width:100%;padding:10px 14px;border:1px solid var(--gray-300);border-radius:var(--radius-sm);font-family:'Inter',sans-serif;font-size:14px;background:white;outline:none;"></select>
+                </div>
+                <div style="flex:1;min-width:160px;">
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:4px;">Jumlah Bayar (Rp)</label>
+                    <input type="number" id="payAmount" required min="0" step="1000" placeholder="0" style="width:100%;padding:10px 14px;border:1px solid var(--gray-300);border-radius:var(--radius-sm);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:var(--transition);" />
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Tambah Pembayaran</button>
+            </form>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-list"></i> Daftar Pembayaran</h2>
+                <div class="selector-group" style="margin-bottom:0;">
+                    <label for="payFilterMonth">Filter:</label>
+                    <select id="payFilterMonth"></select>
+                </div>
+            </div>
+            <div id="paymentList"></div>
+        </div>
+    </section>
+</div>
+
+<script>
+// ============================================================
+// DATA 2026 – berdasarkan sheet 2026
+// ============================================================
+
+const EXPENSES = {
+    Jan: [
+        { desc: 'AIR (14&22 JAN 26)', amount: 400000 },
+        { desc: 'KASI MB YUTI', amount: 200000 },
+        { desc: 'ANG Januari', amount: 0 },
+        { desc: 'MAS FIRMAN', amount: 50000 },
+        { desc: 'PIPA DAPUR', amount: 25000 },
+        { desc: 'lampu dan tongkat', amount: 125000 },
+        { desc: 'pompa pendorong lt 2', amount: 500000 },
+    ],
+    Feb: [
+        { desc: 'AIR (10 FEB 26)', amount: 200000 },
+        { desc: 'KASI MB YUTI', amount: 200000 },
+        { desc: 'ANG FEBRUARI', amount: 7900000 },
+        { desc: 'MAS FIRMAN', amount: 50000 },
+    ],
+    Mar: [
+        { desc: 'AIR (2&24MARET 26)', amount: 400000 },
+        { desc: 'KASI MB YUTI', amount: 200000 },
+        { desc: 'ANG MARET', amount: 7900000 },
+        { desc: 'MAS FIRMAN', amount: 50000 },
+        { desc: 'renov', amount: 632000 },
+    ],
+    Apr: [
+        { desc: 'AIR (APRIL 26)', amount: 200000 },
+        { desc: 'KASI MB YUTI', amount: 200000 },
+        { desc: 'ANG APRIL', amount: 7900000 },
+        { desc: 'MAS FIRMAN', amount: 50000 },
+        { desc: 'wastafel', amount: 55000 },
+    ],
+    Mei: [
+        { desc: 'AIR (11mei&20mei26)', amount: 400000 },
+        { desc: 'KASI MB YUTI', amount: 200000 },
+        { desc: 'ANG MEI', amount: 7900000 },
+        { desc: 'MAS FIRMAN', amount: 50000 },
+        { desc: 'pajak', amount: 630000 },
+    ],
+    Jun: [
+        { desc: 'AIR (juni)', amount: 400000 },
+        { desc: 'KASI MB YUTI', amount: 200000 },
+        { desc: 'ANG JUNI', amount: 7900000 },
+        { desc: 'MAS FIRMAN', amount: 50000 },
+    ],
+    Jul: [
+        { desc: 'AIR (juli)', amount: 400000 },
+        { desc: 'KASI MB YUTI', amount: 200000 },
+        { desc: 'ANG JULI', amount: 7900000 },
+        { desc: 'MAS FIRMAN', amount: 50000 },
+        { desc: 'renov 1 kontrakan', amount: 1200000 },
+        { desc: 'renov tgl 21', amount: 225000 },
+    ],
+    Agt: [
+        { desc: 'AIR (agustus)', amount: 400000 },
+        { desc: 'KASI MB YUTI', amount: 200000 },
+        { desc: 'ANG JULI (agustus)', amount: 7900000 },
+        { desc: 'MAS FIRMAN', amount: 50000 },
+        { desc: '17 agustus RT', amount: 300000 },
+    ],
+};
+
+const INCOME = {
+    Jan: {
+        'BU IPAH': 800000, 'MB YUTI': 1000000, 'BU YUNI': 800000, 'BU CITRA': 800000,
+        'RAHMAT': 800000, 'BU SUSANTI': 1300000, 'PERI PALDI': 400000, 'ZAKARIA': 800000,
+        'Bu Tika': 800000, 'KHADAR OMAR': 800000, 'SISA PENCAIRAN': 1061000,
+    },
+    Feb: {
+        'BU IPAH': 800000, 'MB YUTI': 1000000, 'BU YUNI': 800000, 'BU CITRA': 800000,
+        'RAHMAT': 800000, 'BU SUSANTI': 1300000, 'PERI PALDI': 400000, 'ZAKARIA': 800000,
+        'Bu Tika': 800000, 'KHADAR OMAR': 800000,
+    },
+    Mar: {
+        'BU IPAH': 800000, 'MB YUTI': 1000000, 'BU YUNI': 800000, 'BU CITRA': 800000,
+        'RAHMAT': 800000, 'BU SUSANTI': 1300000, 'PERI PALDI': 400000, 'ZAKARIA': 800000,
+        'Bu Tika': 800000, 'KHADAR OMAR': 0,
+    },
+    Apr: {
+        'BU IPAH': 800000, 'MB YUTI': 1000000, 'BU YUNI': 800000, 'BU CITRA': 800000,
+        'RAHMAT': 800000, 'BU SUSANTI': 1300000, 'PERI PALDI': 400000, 'ZAKARIA': 800000,
+        'Bu Tika': 800000, 'SITI NURHALIMAH': 800000,
+    },
+    Mei: {
+        'BU IPAH': 800000, 'MB YUTI': 1050000, 'BU YUNI': 800000, 'BU CITRA': 800000,
+        'RAHMAT': 800000, 'BU SUSANTI': 1350000, 'PERI PALDI': 450000, 'ZAKARIA': 800000,
+        'Bu Tika': 800000, 'SITI NURHALIMAH': 800000,
+    },
+    Jun: {
+        'BU IPAH': 850000, 'MB YUTI': 1000000, 'BU YUNI': 850000, 'BU CITRA': 0,
+        'RAHMAT': 800000, 'BU SUSANTI': 1350000, 'PERI PALDI': 450000, 'ZAKARIA': 850000,
+        'Bu Tika': 850000, 'SITI NURHALIMAH': 850000,
+    },
+    Jul: {
+        'BU IPAH': 850000, 'MB YUTI': 1000000, 'BU YUNI': 850000, 'RAHMAT': 800000,
+        'BU SUSANTI': 1350000, 'PERI PALDI': 450000, 'ZAKARIA': 850000,
+        'Bu Tika': 900000, 'SITI NURHALIMAH': 850000, 'NAIMUL': 850000,
+    },
+    Agt: {
+        'BU IPAH': 850000, 'MB YUTI': 0, 'BU YUNI': 0, 'RAHMAT': 900000,
+        'BU SUSANTI': 0, 'PERI PALDI': 0, 'ZAKARIA': 0, 'Bu Tika': 0,
+        'SITI NURHALIMAH': 850000, 'NAIMUL': 850000,
+    },
+};
+
+// ============================================================
+// GLOBAL STATE
+// ============================================================
+let openingBalance = 153584; // default sesuai Excel
+let deletedTenants = JSON.parse(localStorage.getItem('deletedTenants') || '[]');
+
+function saveDeletedTenants() {
+    localStorage.setItem('deletedTenants', JSON.stringify(deletedTenants));
+}
+
+function fmt(n) {
+    if (n === undefined || n === null || isNaN(n)) return 'Rp0';
+    return 'Rp' + Math.round(n).toLocaleString('id-ID');
+}
+
+function getMonthTotalIncome(month) {
+    const data = INCOME[month] || {};
+    return Object.values(data).reduce((s, v) => s + (v || 0), 0);
+}
+
+function getMonthTotalExpense(month) {
+    const data = EXPENSES[month] || [];
+    return data.reduce((s, e) => s + (e.amount || 0), 0);
+}
+
+function getAllTenants() {
+    const set = new Set();
+    Object.values(INCOME).forEach(monthData => {
+        Object.keys(monthData).forEach(name => {
+            if (!deletedTenants.includes(name)) {
+                set.add(name);
+            }
+        });
+    });
+    return Array.from(set).sort();
+}
+
+function renderAll() {
+    const bal = parseFloat(document.getElementById('openingBal').value) || 0;
+    openingBalance = bal;
+    renderHeaderStats();
+    renderDashboard();
+    renderMonthly(document.getElementById('monthFilter').value);
+    renderTenants();
+    populateMonthFilter();
+    populateAllMonthSelects();
+    populateTenantSelect();
+    renderDeleteTenantList();
+    renderExpenseList();
+    renderPaymentList();
+    document.getElementById('displayOpeningBal').textContent = fmt(openingBalance);
+}
+
+function renderHeaderStats() {
+    let totalInc = 0, totalExp = 0;
+    const months = Object.keys(INCOME);
+    months.forEach(m => {
+        totalInc += getMonthTotalIncome(m);
+        totalExp += getMonthTotalExpense(m);
+    });
+    const balance = totalInc - totalExp + openingBalance;
+    document.getElementById('totalIncome').textContent = fmt(totalInc);
+    document.getElementById('totalExpense').textContent = fmt(totalExp);
+    const balEl = document.getElementById('totalBalance');
+    balEl.textContent = fmt(balance);
+    balEl.className = 'value ' + (balance >= 0 ? 'positive' : 'negative');
+    document.getElementById('monthCount').textContent = months.length + ' bln';
+}
+
+function renderDashboard() {
+    let totalInc = 0, totalExp = 0;
+    const months = Object.keys(INCOME);
+    months.forEach(m => {
+        totalInc += getMonthTotalIncome(m);
+        totalExp += getMonthTotalExpense(m);
+    });
+    const balance = totalInc - totalExp + openingBalance;
+    const avg = months.length ? totalInc / months.length : 0;
+
+    document.getElementById('dashIncome').textContent = fmt(totalInc);
+    document.getElementById('dashExpense').textContent = fmt(totalExp);
+    document.getElementById('dashBalance').textContent = fmt(balance);
+    document.getElementById('dashAvg').textContent = fmt(avg);
+    document.getElementById('totalMonths').textContent = months.length;
+
+    const tenants = getAllTenants();
+    const active = tenants.filter(name => {
+        let count = 0;
+        months.forEach(m => {
+            const val = INCOME[m]?.[name] || 0;
+            if (val > 0) count++;
+        });
+        return count >= 1;
+    });
+    document.getElementById('activeTenants').textContent = active.length;
+
+    const tenantTotal = tenants.map(name => {
+        let total = 0;
+        months.forEach(m => { total += INCOME[m]?.[name] || 0; });
+        return { name, total };
+    }).sort((a, b) => b.total - a.total).slice(0, 10);
+
+    const topEl = document.getElementById('topTenants');
+    if (tenantTotal.length === 0) {
+        topEl.innerHTML = '<div class="text-muted">Belum ada data</div>';
+    } else {
+        topEl.innerHTML = tenantTotal.map((t, i) =>
+            `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--gray-100);">
+                <span>${i+1}. ${t.name}</span>
+                <span style="font-weight:600;">${fmt(t.total)}</span>
+            </div>`
+        ).join('');
+    }
+
+    const monthTotals = months.map(m => ({ month: m, total: getMonthTotalIncome(m) }))
+        .sort((a, b) => b.total - a.total).slice(0, 6);
+    const topMonthsEl = document.getElementById('topMonths');
+    if (monthTotals.length === 0) {
+        topMonthsEl.innerHTML = '<div class="text-muted">Belum ada data</div>';
+    } else {
+        topMonthsEl.innerHTML = monthTotals.map((m, i) =>
+            `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--gray-100);">
+                <span>${i+1}. ${m.month} 2026</span>
+                <span style="font-weight:600;">${fmt(m.total)}</span>
+            </div>`
+        ).join('');
+    }
+    document.getElementById('displayOpeningBal').textContent = fmt(openingBalance);
+}
+
+function renderMonthly(filterMonth) {
+    const grid = document.getElementById('monthGrid');
+    const months = Object.keys(INCOME);
+    let filtered = filterMonth && filterMonth !== 'all' ? months.filter(m => m === filterMonth) : months;
+
+    if (filtered.length === 0) {
+        grid.innerHTML = '<div class="card" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray-500);">Tidak ada data untuk bulan ini.</div>';
+        return;
+    }
+
+    grid.innerHTML = filtered.map(month => {
+        const incData = INCOME[month] || {};
+        const expData = EXPENSES[month] || [];
+        const totalInc = Object.values(incData).reduce((s, v) => s + (v || 0), 0);
+        const totalExp = expData.reduce((s, e) => s + (e.amount || 0), 0);
+        const balance = totalInc - totalExp;
+        const incRows = Object.entries(incData).filter(([_, amt]) => amt > 0);
+
+        return `
+            <div class="month-card">
+                <div class="month-head">
+                    <h3>${month} 2026</h3>
+                    <span class="month-total">${fmt(totalInc)}</span>
+                </div>
+                <div class="month-body">
+                    <div class="sub-section">
+                        <div class="sub-label"><i class="fas fa-arrow-down" style="color:var(--success);"></i> Pendapatan</div>
+                        ${incRows.length ? incRows.map(([name, amt]) =>
+                            `<div class="row-item"><span class="desc">${name}</span><span class="amt" style="color:var(--success);">${fmt(amt)}</span></div>`
+                        ).join('') : '<div class="text-muted" style="font-size:13px;">Tidak ada pendapatan</div>'}
+                        ${incRows.length ? `<div class="total-row"><span>Total Pendapatan</span><span style="color:var(--success);">${fmt(totalInc)}</span></div>` : ''}
+                    </div>
+                    <div class="sub-section">
+                        <div class="sub-label"><i class="fas fa-arrow-up" style="color:var(--danger);"></i> Biaya</div>
+                        ${expData.length ? expData.map(e =>
+                            `<div class="row-item"><span class="desc">${e.desc}</span><span class="amt" style="color:var(--danger);">${fmt(e.amount)}</span></div>`
+                        ).join('') : '<div class="text-muted" style="font-size:13px;">Tidak ada biaya</div>'}
+                        ${expData.length ? `<div class="total-row"><span>Total Biaya</span><span style="color:var(--danger);">${fmt(totalExp)}</span></div>` : ''}
+                    </div>
+                    <div style="margin-top:12px;padding-top:10px;border-top:2px solid var(--gray-300);display:flex;justify-content:space-between;font-weight:700;font-size:15px;">
+                        <span>Sisa Bulan Ini</span>
+                        <span style="color:${balance >= 0 ? 'var(--success)' : 'var(--danger)'};">${fmt(balance)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderTenants() {
+    const grid = document.getElementById('tenantGrid');
+    const tenants = getAllTenants();
+    document.getElementById('tenantCount').textContent = tenants.length;
+    const months = Object.keys(INCOME);
+
+    grid.innerHTML = tenants.map(name => {
+        let total = 0;
+        const payments = months.map(m => {
+            const val = INCOME[m]?.[name] || 0;
+            total += val;
+            return { month: m, amount: val };
+        });
+        const activeMonths = payments.filter(p => p.amount > 0).map(p => p.month);
+        const lastPaid = activeMonths.length > 0 ? activeMonths[activeMonths.length - 1] : null;
+        const isActive = activeMonths.length > 0;
+
+        return `
+            <div class="tenant-card">
+                <div class="tenant-name">
+                    <span>${name}</span>
+                    <span class="status-badge ${isActive ? 'active' : 'inactive'}">${isActive ? 'Aktif' : 'Tidak Aktif'}</span>
+                </div>
+                <div class="tenant-details">
+                    <span><i class="fas fa-coins"></i> Total: ${fmt(total)}</span>
+                    <span><i class="fas fa-calendar-check"></i> ${activeMonths.length} bulan</span>
+                    ${lastPaid ? `<span><i class="fas fa-clock"></i> Terakhir: ${lastPaid} 2026</span>` : ''}
+                </div>
+                <div class="tenant-payments">
+                    ${months.map(m => {
+                        const amt = INCOME[m]?.[name] || 0;
+                        let cls = 'zero';
+                        if (amt > 0) cls = 'paid';
+                        return `<span class="pay-badge ${cls}">${m} ${amt > 0 ? fmt(amt) : '−'}</span>`;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function populateMonthFilter() {
+    const sel = document.getElementById('monthFilter');
+    const months = Object.keys(INCOME);
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="all">Semua</option>' +
+        months.map(m => `<option value="${m}" ${m === currentVal ? 'selected' : ''}>${m} 2026</option>`).join('');
+}
+
+// ============================================================
+// EVENT LISTENERS
+// ============================================================
+document.getElementById('openingBal').addEventListener('input', renderAll);
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        const target = this.dataset.tab;
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('panel-' + target).classList.add('active');
+        if (target === 'monthly') renderMonthly(document.getElementById('monthFilter').value);
+        if (target === 'tenants') renderTenants();
+        if (target === 'dashboard') renderDashboard();
+        if (target === 'manage-tenants') { renderDeleteTenantList(); populateTenantSelect(); }
+        if (target === 'expense') renderExpenseList();
+        if (target === 'payment') { renderPaymentList(); populateTenantSelect(); }
+    });
+});
+
+document.getElementById('monthFilter').addEventListener('change', function() {
+    renderMonthly(this.value);
+});
+
+document.getElementById('printMonthlyBtn').addEventListener('click', function() {
+    window.print();
+});
+
+// ============================================================
+// CRUD FUNCTIONS
+// ============================================================
+
+function populateAllMonthSelects() {
+    const months = Object.keys(INCOME);
+    const monthOptions = months.map(m => `<option value="${m}">${m} 2026</option>`).join('');
+    
+    ['expMonth', 'payMonth', 'expFilterMonth', 'payFilterMonth'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const currentVal = sel.value;
+        if (id === 'expFilterMonth' || id === 'payFilterMonth') {
+            sel.innerHTML = '<option value="all">Semua</option>' + monthOptions;
+        } else {
+            sel.innerHTML = monthOptions;
+        }
+        if (currentVal) sel.value = currentVal;
+    });
+}
+
+function populateTenantSelect() {
+    const sel = document.getElementById('payTenant');
+    const tenants = getAllTenants();
+    sel.innerHTML = tenants.map(t => `<option value="${t}">${t}</option>`).join('');
+}
+
+function renderDeleteTenantList() {
+    const container = document.getElementById('deleteTenantList');
+    const activeTenants = getAllTenants();
+    const deletedNames = deletedTenants.filter(name => {
+        return Object.values(INCOME).some(monthData => monthData[name] !== undefined);
+    });
+
+    if (activeTenants.length === 0 && deletedNames.length === 0) {
+        container.innerHTML = '<div class="text-muted" style="padding:20px;text-align:center;">Belum ada data penghuni</div>';
+        return;
+    }
+
+    let html = '';
+
+    if (activeTenants.length > 0) {
+        html += '<div style="margin-bottom:8px;font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;">Penghuni Aktif</div>';
+        html += activeTenants.map(name => {
+            let total = 0;
+            Object.keys(INCOME).forEach(m => { total += INCOME[m]?.[name] || 0; });
+            return `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-100);">
+                    <div>
+                        <span style="font-weight:600;font-size:14px;">${name}</span>
+                        <span style="font-size:12px;color:var(--gray-500);margin-left:8px;">Total: ${fmt(total)}</span>
+                    </div>
+                    <button class="btn btn-sm" style="background:var(--danger);color:white;" onclick="deleteTenant('${name.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-trash"></i> Hapus
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    if (deletedNames.length > 0) {
+        html += '<div style="margin-top:16px;margin-bottom:8px;font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;">Penghuni Dihapus (Data Pembayaran Tersimpan)</div>';
+        html += deletedNames.map(name => {
+            let total = 0;
+            Object.keys(INCOME).forEach(m => { total += INCOME[m]?.[name] || 0; });
+            return `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-100);">
+                    <div>
+                        <span style="font-weight:600;font-size:14px;color:var(--gray-400);">${name}</span>
+                        <span style="font-size:12px;color:var(--gray-400);margin-left:8px;">Total: ${fmt(total)}</span>
+                    </div>
+                    <button class="btn btn-sm" style="background:var(--success);color:white;" onclick="restoreTenant('${name.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-undo"></i> Kembalikan
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    container.innerHTML = html;
+}
+
+function deleteTenant(name) {
+    if (!confirm(`Hapus penghuni "${name}"? Data pembayaran tidak akan terhapus.`)) return;
+    if (!deletedTenants.includes(name)) {
+        deletedTenants.push(name);
+        saveDeletedTenants();
+    }
+    renderAll();
+    renderDeleteTenantList();
+    populateTenantSelect();
+}
+
+function restoreTenant(name) {
+    deletedTenants = deletedTenants.filter(n => n !== name);
+    saveDeletedTenants();
+    renderAll();
+    renderDeleteTenantList();
+    populateTenantSelect();
+    alert(`Penghuni "${name}" berhasil dikembalikan!`);
+}
+
+document.getElementById('addTenantForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const name = document.getElementById('newTenantName').value.trim().toUpperCase();
+    if (!name) return;
+    const exists = getAllTenants().includes(name);
+    if (exists) {
+        alert('Penghuni "' + name + '" sudah ada!');
+        return;
+    }
+    const wasDeleted = deletedTenants.includes(name);
+    if (wasDeleted) {
+        deletedTenants = deletedTenants.filter(n => n !== name);
+        saveDeletedTenants();
+        document.getElementById('newTenantName').value = '';
+        renderAll();
+        renderDeleteTenantList();
+        populateTenantSelect();
+        alert('Penghuni "' + name + '" berhasil dikembalikan dari daftar hapus!');
+        return;
+    }
+    const months = Object.keys(INCOME);
+    months.forEach(m => {
+        INCOME[m][name] = 0;
+    });
+    document.getElementById('newTenantName').value = '';
+    renderAll();
+    renderDeleteTenantList();
+    populateTenantSelect();
+    alert('Penghuni "' + name + '" berhasil ditambahkan!');
+});
+
+function renderExpenseList() {
+    const container = document.getElementById('expenseList');
+    const filterMonth = document.getElementById('expFilterMonth')?.value || 'all';
+    const months = Object.keys(EXPENSES);
+    const filtered = filterMonth === 'all' ? months : months.filter(m => m === filterMonth);
+    
+    let allExpenses = [];
+    filtered.forEach(m => {
+        (EXPENSES[m] || []).forEach((e, idx) => {
+            allExpenses.push({ month: m, desc: e.desc, amount: e.amount, idx });
+        });
+    });
+
+    if (allExpenses.length === 0) {
+        container.innerHTML = '<div class="text-muted" style="padding:20px;text-align:center;">Tidak ada pengeluaran</div>';
+        return;
+    }
+
+    container.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <thead><tr style="border-bottom:2px solid var(--gray-300);text-align:left;">
+            <th style="padding:8px 4px;">Bulan</th>
+            <th style="padding:8px 4px;">Keterangan</th>
+            <th style="padding:8px 4px;text-align:right;">Jumlah</th>
+            <th style="padding:8px 4px;text-align:center;">Aksi</th>
+        </tr></thead>
+        <tbody>${allExpenses.map(e => `
+            <tr style="border-bottom:1px solid var(--gray-100);">
+                <td style="padding:8px 4px;font-weight:500;">${e.month}</td>
+                <td style="padding:8px 4px;">${e.desc}</td>
+                <td style="padding:8px 4px;text-align:right;color:var(--danger);font-weight:500;">${fmt(e.amount)}</td>
+                <td style="padding:8px 4px;text-align:center;">
+                    <button class="btn btn-sm" style="background:var(--danger);color:white;" onclick="deleteExpense('${e.month}',${e.idx})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('')}</tbody>
+    </table>`;
+}
+
+function deleteExpense(month, idx) {
+    if (!confirm('Hapus pengeluaran ini?')) return;
+    EXPENSES[month].splice(idx, 1);
+    renderAll();
+    renderExpenseList();
+}
+
+document.getElementById('addExpenseForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const month = document.getElementById('expMonth').value;
+    const desc = document.getElementById('expDesc').value.trim();
+    const amount = parseInt(document.getElementById('expAmount').value) || 0;
+    if (!month || !desc || amount <= 0) {
+        alert('Mohon lengkapi semua field!');
+        return;
+    }
+    if (!EXPENSES[month]) EXPENSES[month] = [];
+    EXPENSES[month].push({ desc, amount });
+    document.getElementById('expDesc').value = '';
+    document.getElementById('expAmount').value = '';
+    renderAll();
+    renderExpenseList();
+    alert('Pengeluaran berhasil ditambahkan!');
+});
+
+function renderPaymentList() {
+    const container = document.getElementById('paymentList');
+    const filterMonth = document.getElementById('payFilterMonth')?.value || 'all';
+    const months = Object.keys(INCOME);
+    const filtered = filterMonth === 'all' ? months : months.filter(m => m === filterMonth);
+    
+    let allPayments = [];
+    filtered.forEach(m => {
+        Object.entries(INCOME[m] || {}).forEach(([name, amt]) => {
+            if (amt > 0) {
+                allPayments.push({ month: m, name, amount: amt });
+            }
+        });
+    });
+
+    if (allPayments.length === 0) {
+        container.innerHTML = '<div class="text-muted" style="padding:20px;text-align:center;">Tidak ada pembayaran</div>';
+        return;
+    }
+
+    container.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <thead><tr style="border-bottom:2px solid var(--gray-300);text-align:left;">
+            <th style="padding:8px 4px;">Bulan</th>
+            <th style="padding:8px 4px;">Penghuni</th>
+            <th style="padding:8px 4px;text-align:right;">Jumlah Bayar</th>
+            <th style="padding:8px 4px;text-align:center;">Aksi</th>
+        </tr></thead>
+        <tbody>${allPayments.map(p => `
+            <tr style="border-bottom:1px solid var(--gray-100);">
+                <td style="padding:8px 4px;font-weight:500;">${p.month}</td>
+                <td style="padding:8px 4px;">${p.name}</td>
+                <td style="padding:8px 4px;text-align:right;color:var(--success);font-weight:500;">${fmt(p.amount)}</td>
+                <td style="padding:8px 4px;text-align:center;">
+                    <button class="btn btn-sm" style="background:var(--danger);color:white;" onclick="deletePayment('${p.month}','${p.name.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('')}</tbody>
+    </table>`;
+}
+
+function deletePayment(month, name) {
+    if (!confirm(`Hapus pembayaran "${name}" di bulan ${month}?`)) return;
+    INCOME[month][name] = 0;
+    renderAll();
+    renderPaymentList();
+}
+
+document.getElementById('addPaymentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const month = document.getElementById('payMonth').value;
+    const tenant = document.getElementById('payTenant').value;
+    const amount = parseInt(document.getElementById('payAmount').value) || 0;
+    if (!month || !tenant || amount <= 0) {
+        alert('Mohon lengkapi semua field!');
+        return;
+    }
+    INCOME[month][tenant] = (INCOME[month][tenant] || 0) + amount;
+    document.getElementById('payAmount').value = '';
+    renderAll();
+    renderPaymentList();
+    alert('Pembayaran berhasil ditambahkan!');
+});
+
+document.getElementById('expFilterMonth').addEventListener('change', renderExpenseList);
+document.getElementById('payFilterMonth').addEventListener('change', renderPaymentList);
+
+// ============================================================
+// INIT
+// ============================================================
+renderAll();
+console.log('✅ Aplikasi Kontrakan 2026 siap. Saldo awal = 153.584 → Sisa = -1.677.416');
+</script>
+</body>
+</html>
