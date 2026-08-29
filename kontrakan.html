@@ -1378,25 +1378,32 @@ function renderReportPreview() {
                 <span>Sisa: ${fmt(mBal)}</span>
             </div>
             <table class="report-table">
-                <thead><tr><th>Keterangan</th><th class="text-right">Pendapatan</th><th class="text-right">Biaya</th></tr></thead>
+                <thead><tr>
+                    <th>Penghuni (Pendapatan)</th>
+                    <th class="text-right">Jumlah</th>
+                    <th>Keterangan Pengeluaran</th>
+                    <th class="text-right">Jumlah</th>
+                </tr></thead>
                 <tbody>`;
 
         const maxRows = Math.max(incRows.length, expData.length);
         for (let i = 0; i < maxRows; i++) {
-            const incName = incRows[i] ? incRows[i][0] : '';
+            const incName = incRows[i] ? incRows[i][0] : '-';
             const incAmt = incRows[i] ? incRows[i][1] : 0;
-            const expDesc = expData[i] ? expData[i].desc : '';
+            const expDesc = expData[i] ? expData[i].desc : '-';
             const expAmt = expData[i] ? expData[i].amount : 0;
             html += `<tr>
-                <td>${incName || expDesc}</td>
+                <td>${incName}</td>
                 <td class="text-right income">${incAmt > 0 ? fmt(incAmt) : '-'}</td>
+                <td>${expDesc}</td>
                 <td class="text-right expense">${expAmt > 0 ? fmt(expAmt) : '-'}</td>
             </tr>`;
         }
 
         html += `<tr class="total-row">
-            <td>Total</td>
+            <td>Total Pendapatan</td>
             <td class="text-right income">${fmt(mInc)}</td>
+            <td>Total Biaya</td>
             <td class="text-right expense">${fmt(mExp)}</td>
         </tr></tbody></table></div>`;
     });
@@ -1578,20 +1585,27 @@ function generatePDF(type) {
                 const tableData = [];
                 for (let i = 0; i < maxRows; i++) {
                     tableData.push([
-                        incRows[i] ? incRows[i][0] : (expData[i] ? expData[i].desc : ''),
+                        incRows[i] ? incRows[i][0] : '-',
                         incRows[i] && incRows[i][1] > 0 ? 'Rp' + fmtN(incRows[i][1]) : '-',
+                        expData[i] ? expData[i].desc : '-',
                         expData[i] && expData[i].amount > 0 ? 'Rp' + fmtN(expData[i].amount) : '-',
                     ]);
                 }
-                tableData.push(['TOTAL', 'Rp' + fmtN(mInc), 'Rp' + fmtN(mExp)]);
+                tableData.push(['TOTAL PENDAPATAN', 'Rp' + fmtN(mInc), 'TOTAL BIAYA', 'Rp' + fmtN(mExp)]);
 
                 autoTableFn({
                     startY: y,
-                    head: [['Keterangan', 'Pendapatan', 'Biaya']],
+                    head: [['Penghuni (Pendapatan)', 'Jumlah', 'Keterangan Pengeluaran', 'Jumlah']],
                     body: tableData,
                     theme: 'striped',
-                    headStyles: { fillColor: [42, 63, 143], fontSize: 9 },
-                    bodyStyles: { fontSize: 9 },
+                    headStyles: { fillColor: [42, 63, 143], fontSize: 8.5 },
+                    bodyStyles: { fontSize: 8.5 },
+                    columnStyles: {
+                        0: { cellWidth: 50, halign: 'left' },
+                        1: { cellWidth: 38, halign: 'right' },
+                        2: { cellWidth: 54, halign: 'left' },
+                        3: { cellWidth: 38, halign: 'right' },
+                    },
                     margin: { left: 15, right: 15 },
                     didParseCell: function(data) {
                         if (data.row.index === tableData.length - 1) {
