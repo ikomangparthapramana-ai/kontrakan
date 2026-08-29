@@ -792,6 +792,25 @@ function loadData() {
 let openingBalance = 153584;
 let deletedTenants = JSON.parse(localStorage.getItem('deletedTenants') || '[]');
 
+const MONTH_ORDER = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+
+function getSortedMonths(months) {
+    const list = months ? [...months] : Object.keys(INCOME);
+    return list.sort((a, b) => {
+        let idxA = MONTH_ORDER.indexOf(a);
+        let idxB = MONTH_ORDER.indexOf(b);
+        if (idxA === -1) {
+            idxA = MONTH_ORDER.findIndex(m => a.toLowerCase().startsWith(m.toLowerCase().slice(0, 3)));
+        }
+        if (idxB === -1) {
+            idxB = MONTH_ORDER.findIndex(m => b.toLowerCase().startsWith(m.toLowerCase().slice(0, 3)));
+        }
+        if (idxA === -1) idxA = 99;
+        if (idxB === -1) idxB = 99;
+        return idxA - idxB;
+    });
+}
+
 function saveDeletedTenants() {
     localStorage.setItem('deletedTenants', JSON.stringify(deletedTenants));
 }
@@ -842,7 +861,7 @@ function renderAll() {
 
 function renderHeaderStats() {
     let totalInc = 0, totalExp = 0;
-    const months = Object.keys(INCOME);
+    const months = getSortedMonths();
     months.forEach(m => {
         totalInc += getMonthTotalIncome(m);
         totalExp += getMonthTotalExpense(m);
@@ -858,7 +877,7 @@ function renderHeaderStats() {
 
 function renderDashboard() {
     let totalInc = 0, totalExp = 0;
-    const months = Object.keys(INCOME);
+    const months = getSortedMonths();
     months.forEach(m => {
         totalInc += getMonthTotalIncome(m);
         totalExp += getMonthTotalExpense(m);
@@ -910,7 +929,7 @@ function renderDashboard() {
 
 function renderMonthly(filterMonth) {
     const grid = document.getElementById('monthGrid');
-    const months = Object.keys(INCOME);
+    const months = getSortedMonths();
     let filtered = filterMonth && filterMonth !== 'all' ? months.filter(m => m === filterMonth) : months;
 
     if (filtered.length === 0) {
@@ -961,7 +980,7 @@ function renderTenants() {
     const grid = document.getElementById('tenantGrid');
     const tenants = getAllTenants();
     document.getElementById('tenantCount').textContent = tenants.length;
-    const months = Object.keys(INCOME);
+    const months = getSortedMonths();
 
     grid.innerHTML = tenants.map(name => {
         let total = 0;
@@ -1000,7 +1019,7 @@ function renderTenants() {
 
 function populateMonthFilter() {
     const sel = document.getElementById('monthFilter');
-    const months = Object.keys(INCOME);
+    const months = getSortedMonths();
     const currentVal = sel.value;
     sel.innerHTML = '<option value="all">Semua</option>' +
         months.map(m => `<option value="${m}" ${m === currentVal ? 'selected' : ''}>${m} 2026</option>`).join('');
@@ -1042,7 +1061,7 @@ document.getElementById('printMonthlyBtn').addEventListener('click', function() 
 });
 
 function populateAllMonthSelects() {
-    const months = Object.keys(INCOME);
+    const months = getSortedMonths();
     const monthOptions = months.map(m => `<option value="${m}">${m} 2026</option>`).join('');
     
     ['expMonth', 'payMonth', 'expFilterMonth', 'payFilterMonth'].forEach(id => {
@@ -1173,7 +1192,7 @@ document.getElementById('addTenantForm').addEventListener('submit', function(e) 
 function renderExpenseList() {
     const container = document.getElementById('expenseList');
     const filterMonth = document.getElementById('expFilterMonth')?.value || 'all';
-    const months = Object.keys(EXPENSES);
+    const months = getSortedMonths(Object.keys(EXPENSES));
     const filtered = filterMonth === 'all' ? months : months.filter(m => m === filterMonth);
     
     let allExpenses = [];
@@ -1237,7 +1256,7 @@ document.getElementById('addExpenseForm').addEventListener('submit', function(e)
 function renderPaymentList() {
     const container = document.getElementById('paymentList');
     const filterMonth = document.getElementById('payFilterMonth')?.value || 'all';
-    const months = Object.keys(INCOME);
+    const months = getSortedMonths();
     const filtered = filterMonth === 'all' ? months : months.filter(m => m === filterMonth);
     
     let allPayments = [];
@@ -1305,7 +1324,7 @@ document.getElementById('payFilterMonth').addEventListener('change', renderPayme
 
 function populateReportMonth() {
     const sel = document.getElementById('reportMonth');
-    const months = Object.keys(INCOME);
+    const months = getSortedMonths();
     sel.innerHTML = '<option value="all">Semua Bulan</option>' +
         months.map(m => `<option value="${m}">${m} 2026</option>`).join('');
 }
@@ -1313,7 +1332,7 @@ function populateReportMonth() {
 function renderReportPreview() {
     const container = document.getElementById('reportPreviewContent');
     const filterMonth = document.getElementById('reportMonth')?.value || 'all';
-    const months = Object.keys(INCOME);
+    const months = getSortedMonths();
     const filtered = filterMonth === 'all' ? months : months.filter(m => m === filterMonth);
 
     let totalInc = 0, totalExp = 0;
@@ -1408,7 +1427,7 @@ function generatePDF(type) {
 
         const pageWidth = doc.internal.pageSize.getWidth();
         const filterMonth = document.getElementById('reportMonth')?.value || 'all';
-        const months = Object.keys(INCOME);
+        const months = getSortedMonths();
         const filtered = filterMonth === 'all' ? months : months.filter(m => m === filterMonth);
         const now = new Date();
         const dateStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
