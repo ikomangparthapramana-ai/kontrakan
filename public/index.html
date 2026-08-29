@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#1a2a6c" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="description" content="Aplikasi Kelola Kontrakan Gunung Indah 2026" />
     <title>Kelola Kontrakan 2026</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -1388,202 +1386,222 @@ function renderReportPreview() {
 }
 
 function generatePDF(type) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const filterMonth = document.getElementById('reportMonth')?.value || 'all';
-    const months = Object.keys(INCOME);
-    const filtered = filterMonth === 'all' ? months : months.filter(m => m === filterMonth);
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+    try {
+        const jsPDFConstructor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+        if (!jsPDFConstructor) {
+            alert('Gagal memuat library PDF. Pastikan perangkat Anda terhubung ke internet dan silakan muat ulang halaman.');
+            return;
+        }
 
-    let totalInc = 0, totalExp = 0;
-    filtered.forEach(m => {
-        totalInc += getMonthTotalIncome(m);
-        totalExp += getMonthTotalExpense(m);
-    });
-    const balance = totalInc - totalExp + openingBalance;
+        const doc = new jsPDFConstructor('p', 'mm', 'a4');
+        const autoTableFn = (options) => {
+            if (typeof doc.autoTable === 'function') {
+                return doc.autoTable(options);
+            } else if (typeof window.jspdfAutoTable === 'function') {
+                return window.jspdfAutoTable(doc, options);
+            } else if (typeof autoTable === 'function') {
+                return autoTable(doc, options);
+            } else {
+                throw new Error('Plugin AutoTable tidak ditemukan.');
+            }
+        };
 
-    // Helper
-    function fmtN(n) { return Math.round(n).toLocaleString('id-ID'); }
-    function header(title) {
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.text('KONTRAKAN GUNUNG INDAH', pageWidth / 2, 18, { align: 'center' });
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'normal');
-        doc.text(title, pageWidth / 2, 25, { align: 'center' });
-        doc.setFontSize(9);
-        doc.text('Dicetak: ' + dateStr + ' | Saldo Awal: Rp' + fmtN(openingBalance), pageWidth / 2, 31, { align: 'center' });
-        doc.setDrawColor(26, 42, 108);
-        doc.setLineWidth(0.5);
-        doc.line(15, 34, pageWidth - 15, 34);
-        return 38;
-    }
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const filterMonth = document.getElementById('reportMonth')?.value || 'all';
+        const months = Object.keys(INCOME);
+        const filtered = filterMonth === 'all' ? months : months.filter(m => m === filterMonth);
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
 
-    if (type === 'summary') {
-        let y = header('RINGKASAN KEUANGAN ' + (filterMonth === 'all' ? 'TAHUN 2026' : filterMonth.toUpperCase() + ' 2026'));
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Ringkasan', 15, y); y += 7;
-
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        const summaryData = [
-            ['Total Pendapatan', 'Rp' + fmtN(totalInc)],
-            ['Total Biaya', 'Rp' + fmtN(totalExp)],
-            ['Saldo Awal', 'Rp' + fmtN(openingBalance)],
-            ['Sisa (Saldo Awal + Pendapatan - Biaya)', 'Rp' + fmtN(balance)],
-            ['Rata-rata Pendapatan / Bulan', 'Rp' + fmtN(filtered.length ? totalInc / filtered.length : 0)],
-            ['Jumlah Bulan', filtered.length + ' bulan'],
-        ];
-        doc.autoTable({
-            startY: y,
-            head: [['Keterangan', 'Nilai']],
-            body: summaryData,
-            theme: 'grid',
-            headStyles: { fillColor: [26, 42, 108], fontSize: 10 },
-            bodyStyles: { fontSize: 10 },
-            columnStyles: { 0: { cellWidth: 100 }, 1: { halign: 'right', cellWidth: 70 } },
-            margin: { left: 15, right: 15 },
+        let totalInc = 0, totalExp = 0;
+        filtered.forEach(m => {
+            totalInc += getMonthTotalIncome(m);
+            totalExp += getMonthTotalExpense(m);
         });
-        y = doc.lastAutoTable.finalY + 10;
+        const balance = totalInc - totalExp + openingBalance;
 
-        // Top tenants
-        const tenants = getAllTenants().map(name => {
-            let total = 0;
-            filtered.forEach(m => { total += INCOME[m]?.[name] || 0; });
-            return { name, total };
-        }).filter(t => t.total > 0).sort((a, b) => b.total - a.total).slice(0, 10);
+        // Helper
+        function fmtN(n) { return Math.round(n).toLocaleString('id-ID'); }
+        function header(title) {
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('KONTRAKAN GUNUNG INDAH', pageWidth / 2, 18, { align: 'center' });
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
+            doc.text(title, pageWidth / 2, 25, { align: 'center' });
+            doc.setFontSize(9);
+            doc.text('Dicetak: ' + dateStr + ' | Saldo Awal: Rp' + fmtN(openingBalance), pageWidth / 2, 31, { align: 'center' });
+            doc.setDrawColor(26, 42, 108);
+            doc.setLineWidth(0.5);
+            doc.line(15, 34, pageWidth - 15, 34);
+            return 38;
+        }
 
-        if (tenants.length > 0) {
+        if (type === 'summary') {
+            let y = header('RINGKASAN KEUANGAN ' + (filterMonth === 'all' ? 'TAHUN 2026' : filterMonth.toUpperCase() + ' 2026'));
             doc.setFontSize(11);
             doc.setFont('helvetica', 'bold');
-            doc.text('Top 10 Penghuni (Pendapatan Tertinggi)', 15, y); y += 7;
-            doc.autoTable({
+            doc.text('Ringkasan', 15, y); y += 7;
+
+            const summaryData = [
+                ['Total Pendapatan', 'Rp' + fmtN(totalInc)],
+                ['Total Biaya', 'Rp' + fmtN(totalExp)],
+                ['Saldo Awal', 'Rp' + fmtN(openingBalance)],
+                ['Sisa (Saldo Awal + Pendapatan - Biaya)', 'Rp' + fmtN(balance)],
+                ['Rata-rata Pendapatan / Bulan', 'Rp' + fmtN(filtered.length ? totalInc / filtered.length : 0)],
+                ['Jumlah Bulan', filtered.length + ' bulan'],
+            ];
+            autoTableFn({
                 startY: y,
-                head: [['#', 'Nama Penghuni', 'Total Pendapatan']],
-                body: tenants.map((t, i) => [i + 1, t.name, 'Rp' + fmtN(t.total)]),
+                head: [['Keterangan', 'Nilai']],
+                body: summaryData,
                 theme: 'grid',
                 headStyles: { fillColor: [26, 42, 108], fontSize: 10 },
                 bodyStyles: { fontSize: 10 },
+                columnStyles: { 0: { cellWidth: 100 }, 1: { halign: 'right', cellWidth: 70 } },
                 margin: { left: 15, right: 15 },
             });
-        }
-    } else if (type === 'tenant') {
-        let y = header('LAPORAN PER PENGHUNI');
-        const tenants = getAllTenants();
-        const tenantData = tenants.map(name => {
-            let total = 0;
-            const perMonth = {};
-            filtered.forEach(m => {
-                const val = INCOME[m]?.[name] || 0;
-                total += val;
-                if (val > 0) perMonth[m] = val;
-            });
-            return { name, total, perMonth, active: total > 0 };
-        }).filter(t => t.active).sort((a, b) => b.total - a.total);
+            y = (doc.lastAutoTable ? doc.lastAutoTable.finalY : y + 60) + 10;
 
-        doc.autoTable({
-            startY: y,
-            head: [['#', 'Nama Penghuni', 'Total', 'Bulan Aktif']],
-            body: tenantData.map((t, i) => [
-                i + 1, t.name, 'Rp' + fmtN(t.total),
-                Object.keys(t.perMonth).join(', ')
-            ]),
-            theme: 'grid',
-            headStyles: { fillColor: [26, 42, 108], fontSize: 9 },
-            bodyStyles: { fontSize: 9 },
-            columnStyles: { 2: { halign: 'right' } },
-            margin: { left: 15, right: 15 },
-            didParseCell: function(data) {
-                if (data.section === 'body' && data.column.index === 2) {
-                    data.styles.halign = 'right';
-                }
+            // Top tenants
+            const tenants = getAllTenants().map(name => {
+                let total = 0;
+                filtered.forEach(m => { total += INCOME[m]?.[name] || 0; });
+                return { name, total };
+            }).filter(t => t.total > 0).sort((a, b) => b.total - a.total).slice(0, 10);
+
+            if (tenants.length > 0) {
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Top 10 Penghuni (Pendapatan Tertinggi)', 15, y); y += 7;
+                autoTableFn({
+                    startY: y,
+                    head: [['#', 'Nama Penghuni', 'Total Pendapatan']],
+                    body: tenants.map((t, i) => [i + 1, t.name, 'Rp' + fmtN(t.total)]),
+                    theme: 'grid',
+                    headStyles: { fillColor: [26, 42, 108], fontSize: 10 },
+                    bodyStyles: { fontSize: 10 },
+                    margin: { left: 15, right: 15 },
+                });
             }
-        });
-    } else {
-        // Full report
-        let y = header('LAPORAN KEUANGAN LENGKAP ' + (filterMonth === 'all' ? 'TAHUN 2026' : filterMonth.toUpperCase() + ' 2026'));
+        } else if (type === 'tenant') {
+            let y = header('LAPORAN PER PENGHUNI');
+            const tenants = getAllTenants();
+            const tenantData = tenants.map(name => {
+                let total = 0;
+                const perMonth = {};
+                filtered.forEach(m => {
+                    const val = INCOME[m]?.[name] || 0;
+                    total += val;
+                    if (val > 0) perMonth[m] = val;
+                });
+                return { name, total, perMonth, active: total > 0 };
+            }).filter(t => t.active).sort((a, b) => b.total - a.total);
 
-        // Summary table
-        doc.autoTable({
-            startY: y,
-            head: [['Keterangan', 'Nilai']],
-            body: [
-                ['Total Pendapatan', 'Rp' + fmtN(totalInc)],
-                ['Total Biaya', 'Rp' + fmtN(totalExp)],
-                ['Sisa (dengan Saldo Awal)', 'Rp' + fmtN(balance)],
-            ],
-            theme: 'grid',
-            headStyles: { fillColor: [26, 42, 108], fontSize: 10 },
-            bodyStyles: { fontSize: 10 },
-            columnStyles: { 1: { halign: 'right' } },
-            margin: { left: 15, right: 15 },
-        });
-        y = doc.lastAutoTable.finalY + 8;
-
-        filtered.forEach(month => {
-            if (y > 250) { doc.addPage(); y = 20; }
-            const incData = INCOME[month] || {};
-            const expData = EXPENSES[month] || [];
-            const mInc = Object.values(incData).reduce((s, v) => s + (v || 0), 0);
-            const mExp = expData.reduce((s, e) => s + (e.amount || 0), 0);
-            const incRows = Object.entries(incData).filter(([_, amt]) => amt > 0);
-
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'bold');
-            doc.setFillColor(26, 42, 108);
-            doc.setTextColor(255, 255, 255);
-            doc.rect(15, y, pageWidth - 30, 7, 'F');
-            doc.text(month.toUpperCase() + ' 2026', 18, y + 5);
-            doc.text('Sisa: Rp' + fmtN(mInc - mExp), pageWidth - 18, y + 5, { align: 'right' });
-            doc.setTextColor(0, 0, 0);
-            y += 9;
-
-            const maxRows = Math.max(incRows.length, expData.length);
-            const tableData = [];
-            for (let i = 0; i < maxRows; i++) {
-                tableData.push([
-                    incRows[i] ? incRows[i][0] : (expData[i] ? expData[i].desc : ''),
-                    incRows[i] && incRows[i][1] > 0 ? 'Rp' + fmtN(incRows[i][1]) : '-',
-                    expData[i] && expData[i].amount > 0 ? 'Rp' + fmtN(expData[i].amount) : '-',
-                ]);
-            }
-            tableData.push(['TOTAL', 'Rp' + fmtN(mInc), 'Rp' + fmtN(mExp)]);
-
-            doc.autoTable({
+            autoTableFn({
                 startY: y,
-                head: [['Keterangan', 'Pendapatan', 'Biaya']],
-                body: tableData,
-                theme: 'striped',
-                headStyles: { fillColor: [42, 63, 143], fontSize: 9 },
+                head: [['#', 'Nama Penghuni', 'Total', 'Bulan Aktif']],
+                body: tenantData.map((t, i) => [
+                    i + 1, t.name, 'Rp' + fmtN(t.total),
+                    Object.keys(t.perMonth).join(', ')
+                ]),
+                theme: 'grid',
+                headStyles: { fillColor: [26, 42, 108], fontSize: 9 },
                 bodyStyles: { fontSize: 9 },
+                columnStyles: { 2: { halign: 'right' } },
                 margin: { left: 15, right: 15 },
                 didParseCell: function(data) {
-                    if (data.row.index === tableData.length - 1) {
-                        data.cell.styles.fontStyle = 'bold';
-                        data.cell.styles.fillColor = [241, 245, 249];
+                    if (data.section === 'body' && data.column.index === 2) {
+                        data.styles.halign = 'right';
                     }
                 }
             });
-            y = doc.lastAutoTable.finalY + 8;
-        });
-    }
+        } else {
+            // Full report
+            let y = header('LAPORAN KEUANGAN LENGKAP ' + (filterMonth === 'all' ? 'TAHUN 2026' : filterMonth.toUpperCase() + ' 2026'));
 
-    // Footer on all pages
-    const totalPages = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text('Kontrakan Gunung Indah 2026 - Halaman ' + i + ' dari ' + totalPages, pageWidth / 2, 290, { align: 'center' });
-    }
+            // Summary table
+            autoTableFn({
+                startY: y,
+                head: [['Keterangan', 'Nilai']],
+                body: [
+                    ['Total Pendapatan', 'Rp' + fmtN(totalInc)],
+                    ['Total Biaya', 'Rp' + fmtN(totalExp)],
+                    ['Sisa (dengan Saldo Awal)', 'Rp' + fmtN(balance)],
+                ],
+                theme: 'grid',
+                headStyles: { fillColor: [26, 42, 108], fontSize: 10 },
+                bodyStyles: { fontSize: 10 },
+                columnStyles: { 1: { halign: 'right' } },
+                margin: { left: 15, right: 15 },
+            });
+            y = (doc.lastAutoTable ? doc.lastAutoTable.finalY : y + 30) + 8;
 
-    const filename = type === 'summary' ? 'Ringkasan_Kontrakan_2026.pdf' :
-                     type === 'tenant' ? 'Laporan_Penghuni_2026.pdf' :
-                     'Laporan_Lengkap_Kontrakan_2026.pdf';
-    doc.save(filename);
+            filtered.forEach(month => {
+                if (y > 250) { doc.addPage(); y = 20; }
+                const incData = INCOME[month] || {};
+                const expData = EXPENSES[month] || [];
+                const mInc = Object.values(incData).reduce((s, v) => s + (v || 0), 0);
+                const mExp = expData.reduce((s, e) => s + (e.amount || 0), 0);
+                const incRows = Object.entries(incData).filter(([_, amt]) => amt > 0);
+
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.setFillColor(26, 42, 108);
+                doc.setTextColor(255, 255, 255);
+                doc.rect(15, y, pageWidth - 30, 7, 'F');
+                doc.text(month.toUpperCase() + ' 2026', 18, y + 5);
+                doc.text('Sisa: Rp' + fmtN(mInc - mExp), pageWidth - 18, y + 5, { align: 'right' });
+                doc.setTextColor(0, 0, 0);
+                y += 9;
+
+                const maxRows = Math.max(incRows.length, expData.length);
+                const tableData = [];
+                for (let i = 0; i < maxRows; i++) {
+                    tableData.push([
+                        incRows[i] ? incRows[i][0] : (expData[i] ? expData[i].desc : ''),
+                        incRows[i] && incRows[i][1] > 0 ? 'Rp' + fmtN(incRows[i][1]) : '-',
+                        expData[i] && expData[i].amount > 0 ? 'Rp' + fmtN(expData[i].amount) : '-',
+                    ]);
+                }
+                tableData.push(['TOTAL', 'Rp' + fmtN(mInc), 'Rp' + fmtN(mExp)]);
+
+                autoTableFn({
+                    startY: y,
+                    head: [['Keterangan', 'Pendapatan', 'Biaya']],
+                    body: tableData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [42, 63, 143], fontSize: 9 },
+                    bodyStyles: { fontSize: 9 },
+                    margin: { left: 15, right: 15 },
+                    didParseCell: function(data) {
+                        if (data.row.index === tableData.length - 1) {
+                            data.cell.styles.fontStyle = 'bold';
+                            data.cell.styles.fillColor = [241, 245, 249];
+                        }
+                    }
+                });
+                y = (doc.lastAutoTable ? doc.lastAutoTable.finalY : y + 40) + 8;
+            });
+        }
+
+        // Footer on all pages
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text('Kontrakan Gunung Indah 2026 - Halaman ' + i + ' dari ' + totalPages, pageWidth / 2, 290, { align: 'center' });
+        }
+
+        const filename = type === 'summary' ? 'Ringkasan_Kontrakan_2026.pdf' :
+                         type === 'tenant' ? 'Laporan_Penghuni_2026.pdf' :
+                         'Laporan_Lengkap_Kontrakan_2026.pdf';
+        doc.save(filename);
+    } catch (err) {
+        console.error('Error saat membuat PDF:', err);
+        alert('Terjadi kesalahan saat membuat file PDF: ' + err.message);
+    }
 }
 
 document.getElementById('reportMonth').addEventListener('change', renderReportPreview);
